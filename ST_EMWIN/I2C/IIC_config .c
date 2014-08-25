@@ -43,6 +43,13 @@ void SDA_Output_Touch( uint16_t val )
 	}
 }
 /*
+*  SDA 管脚读取电平
+*/
+uint8_t SDA_Input_Touch(void)
+{
+	return GPIO_ReadInputDataBit(I2CTouch_PORT, SDATouch_Pin);
+}
+/*
 *  SCL 管脚作为输出模式
 */
 void SCL_Output_Mode_Touch(void)
@@ -80,11 +87,11 @@ void SCL_Output_Touch( uint16_t val )
 	}
 }
 /*
-*  SDA 管脚读取电平
+*  SCL 管脚读取电平
 */
-uint8_t SDA_Input_Touch(void)
+uint8_t SCL_Input_Touch(void)
 {
-	return GPIO_ReadInputDataBit(I2CTouch_PORT, SDATouch_Pin);
+	return GPIO_ReadInputDataBit(I2CTouch_PORT, SCLTouch_Pin);
 }
 /*
 *  简单延时
@@ -124,7 +131,9 @@ uint8_t I2CWaitAck_Touch(void)
 	unsigned short cErrTime = 50;
 	SDA_Input_Mode_Touch(); 
 	HALF_BIT_DLEAY;
-	I2C_SCL_HI;HALF_BIT_DLEAY;
+	I2C_SCL_HI;
+	while(SCL_Input_Touch() == Bit_RESET);
+	HALF_BIT_DLEAY;
 	while(SDA_Input_Touch())
 	{
 		cErrTime--;

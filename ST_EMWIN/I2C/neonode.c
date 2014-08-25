@@ -305,7 +305,25 @@ write_error:
 	IIC_SEND_STOP;											// ·¢ËÍÍ£Ö¹Î»
 	return 0;	
 }
-
+/*
+	Function name:	NeonodeDeactive
+	Parameters: 		None
+	Return: 				None
+	Description:	
+*/
+int8_t NeonodeDeactive(void)
+{
+	uint8_t buf[3];
+	int8_t rc = 1;
+	do
+		{
+			buf[0] = DEACTIVATE_ID;
+			buf[2] = 0;
+			CommsNeonodeCmdWrite(DEACTIVATE_SIZE,buf);
+		}
+	while(CommsNeonodeCmdRead(buf) == 0 || buf[2] != DEACTIVATERESPONSE_ID);
+	return rc;
+}
 /*
 	Function name:	NeonodeSetting
 	Parameters: 		None
@@ -664,7 +682,7 @@ void	NeonodeLEDLevelsTest(led_level_t *level_buf,uint8_t *num)
 		cnt=0;
 		do{
 
-#ifdef ret
+#if 0
 			if(cnt>5)
 			{
 				//	 /* neonode init*/
@@ -706,7 +724,7 @@ void	NeonodeLEDLevelsTest(led_level_t *level_buf,uint8_t *num)
 	/*Requesting LED levels  Axis Y*/
 	do
 	{
-#ifdef ret
+#if 0
 			if(cnt>5)
 			{
 				//	 /* neonode init*/

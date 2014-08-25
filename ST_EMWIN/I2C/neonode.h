@@ -275,7 +275,7 @@ uint8_t NeonodeSetting(void);
 uint8_t NeonodeNewConvertion(void);
 void	NeonodeOpenShortTest(open_short_t *pd,open_short_t *led,uint8_t *num_pds,uint8_t *num_leds);
 void	NeonodeLEDLevelsTest(led_level_t *level_buf,uint8_t *num);
-
+int8_t NeonodeDeactive(void);
 //****************************************************************************
 // ±‰¡ø…Í√˜ 
 //****************************************************************************/

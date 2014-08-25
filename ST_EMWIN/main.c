@@ -73,7 +73,7 @@ FLAG flag;
 volatile short g_sTouchX1;
 volatile short g_sTouchY1;
 uint8_t GUI_Initialized   = 0;
-uint32_t Tmr1Cnt=0;
+uint32_t Tmr1Cnt=0,DelayForLevelTest;
 #define  ID_BUTTON  (GUI_ID_USER+0)
 uint8_t res=0;  //初始化返回值变量
 uint8_t buf[30];
@@ -218,7 +218,9 @@ void calkey(void)
 		}
   }
 }
-
+open_short_t OSTestPDs[NUMBEROFAXISPDS_X+NUMBEROFAXISPDS_Y+10];
+open_short_t OSTestLESs[NUMBEROFAXISLEDS_X+NUMBEROFAXISLEDS_Y+10];
+uint8_t NumPDs;
 unsigned int last_x1,last_y1,last_x2,last_y2;
 uint8_t PoinCal(uint16_t x,uint16_t y,uint16_t x1,uint16_t x2,uint16_t y1,uint16_t y2);
 int main(void)
@@ -239,7 +241,8 @@ int main(void)
 	res=NeonodeSetting();	
 	MotionEventInit();
   GUI_Init();	
-
+/*OpenShort Test  PD & Led */
+  NeonodeOpenShortTest(OSTestPDs,OSTestLESs,&NumLeds,&NumPDs);
 	
 	 SysTick_Config(SystemCoreClock / 1000);
 	if(res==0x01)     //初始化成功
@@ -268,9 +271,11 @@ int main(void)
 			GUI_SetBkColor(GUI_BLACK);
 			GUI_Clear();
 			GUI_SetFont(GUI_FONT_8X16_ASCII);
+		
 			}
-			
+			while(Tmr1Cnt - DelayForLevelTest < 60); // delay 600ms
 	    NeonodeLEDLevelsTest(LedLevelTest,&NumLeds);
+			DelayForLevelTest = Tmr1Cnt;
 				for(i=0;i<0xfffff;i++);
 					for(count_ledpad=0;count_ledpad<26;count_ledpad++)           //26个LED  
 						{
@@ -366,6 +371,12 @@ int main(void)
 			{
 				hasstep2=0;
 			WM_InvalidateWindow(WM_HBKWIN);
+	 	 /* neonode init
+			CommsNeonodeInit(); 
+			//GUI_Delay(10);//wait fot zForec DR high
+			for(i=0;i<0xffffff;i++);
+			res=NeonodeSetting();	*/
+				
 			}
 		       GUI_SetPenSize((int)((TouchNotesBuf[0].Height*TouchNotesBuf[0].Width*1.0)/(3.14)));
 					  GUI_Delay(10);
@@ -614,6 +625,7 @@ void BT_Hand(void)
 			PointHandler();
 			noKeyDly = 0;
 		}
+		#if 0
 		else
 		{
 			/* bug, if no response,then reinitial  */
@@ -643,7 +655,7 @@ void BT_Hand(void)
 							g_sTouchY1=0xffff;
 							g_sTouchX1=0xffff;
 		}       
-		
+		#endif
 
 }
 
