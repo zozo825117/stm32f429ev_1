@@ -36,6 +36,8 @@
 #include "motion.h"
 #include "erase.c"
 #include "clear.c"
+#include "fixed.c"
+#include "brush.c"
 extern void delay1_Touch(unsigned int n);
 #define abs(a,b)  ((a>b)?(a-b):(b-a))
 unsigned char stepkey=1;
@@ -155,6 +157,7 @@ switch (_pMsg->MsgId)
 	
 	 GUI_DrawBitmap(&bmerase,46*8,435);
 	 GUI_DrawBitmap(&bmclear,46*9,435);
+	 GUI_DrawBitmap(&bmfixed,46*7,435);
 	 // GUI_SetColor(GUI_WHITE);
 	
 	
@@ -222,6 +225,7 @@ open_short_t OSTestPDs[NUMBEROFAXISPDS_X+NUMBEROFAXISPDS_Y+10];
 open_short_t OSTestLESs[NUMBEROFAXISLEDS_X+NUMBEROFAXISLEDS_Y+10];
 uint8_t NumPDs;
 unsigned int last_x1,last_y1,last_x2,last_y2;
+unsigned char num_touch=0;
 uint8_t PoinCal(uint16_t x,uint16_t y,uint16_t x1,uint16_t x2,uint16_t y1,uint16_t y2);
 int main(void)
 {
@@ -230,10 +234,10 @@ int main(void)
 	BUTTON_Handle hButton;
 
   NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);
- Key_Init();
+ 
 	SDRAM_Init();
   RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_CRC, ENABLE);  
-	 
+	 Key_Init();//按键初始化
 //	 /* neonode init*/
 	CommsNeonodeInit(); 
 	//GUI_Delay(10);//wait fot zForec DR high
@@ -259,19 +263,20 @@ int main(void)
  
  
  }
-
+ 
 	
 	while(1)
 	{
-	calkey();
-			if(stepkey==2)
+		
+		
+		calkey();
+		if(stepkey==2)
 		{
 			if(!hasstep2)
 			{
 			GUI_SetBkColor(GUI_BLACK);
 			GUI_Clear();
 			GUI_SetFont(GUI_FONT_8X16_ASCII);
-		
 			}
 			while(Tmr1Cnt - DelayForLevelTest < 60); // delay 600ms
 	    NeonodeLEDLevelsTest(LedLevelTest,&NumLeds);
@@ -364,25 +369,28 @@ int main(void)
 			
 			hasstep2=1;
 		}
-		//GUI_DispDecAt(TouchNotesBuf[0].Height,10,10,10);
 		if(stepkey==1)
 		{
 			if(hasstep2)
 			{
 				hasstep2=0;
 			WM_InvalidateWindow(WM_HBKWIN);
-	 	 /* neonode init
-			CommsNeonodeInit(); 
-			//GUI_Delay(10);//wait fot zForec DR high
-			for(i=0;i<0xffffff;i++);
-			res=NeonodeSetting();	*/
-				
 			}
-		       GUI_SetPenSize((int)((TouchNotesBuf[0].Height*TouchNotesBuf[0].Width*1.0)/(3.14)));
-					  GUI_Delay(10);
+		//GUI_DispDecAt(TouchNotesBuf[0].Height,10,10,10);
+		if(num_touch)
+		{
+		 GUI_SetPenSize((int)((TouchNotesBuf[0].Height*TouchNotesBuf[0].Width*1.0)/(3.14)));
+		}
+		else
+		{
+		GUI_SetPenSize(20);
+		}
+		
+					 GUI_Delay(10);
 						if(flag.down)
 						{
-							    
+							     last_x1=g_sTouchX1;
+						       last_y1=g_sTouchY1;
 							if(g_sTouchY1>_aButtonData[0].yPos-20)
 							{
 								if(g_sTouchX1<_aButtonData[6].xPos+_aButtonData[6].xSize) //左边
@@ -443,14 +451,25 @@ int main(void)
 									
 								}
 						  
-									 
+							if(PoinCal(g_sTouchX1,g_sTouchY1,46*7,46*7+45,435,435+43)) //固定画笔大小
+								{
+								    if(!num_touch)  
+										{
+										 GUI_DrawBitmap(&bmbrush,46*7,435);
+											
+											num_touch=1;
+										}
+										else
+										{
+										GUI_DrawBitmap(&bmfixed,46*7,435);
+											num_touch=0;
+										}
+										GUI_Delay(400);
+								}	 
 									
 					   }
 						
-//							
-//							    last_x1=g_sTouchX1;
-//						      last_y1=g_sTouchY1;
-							
+							 
 							
 						}
 						if(flag.move)//移动
@@ -460,12 +479,9 @@ int main(void)
 								{
 										if(!flag.erase)
 										{
-										GUI_CURSOR_Hide();
-//											if(abs(last_x1,g_sTouchX1)<60&&abs(last_y1,g_sTouchY1)<60)
-//											{
+											GUI_CURSOR_Hide();
 									  GUI_SetColor(flag.color) ;  
 									  GUI_DrawLine(last_x1,last_y1,g_sTouchX1,g_sTouchY1);//移动的时候画线
-								//			}
 										}
 										else  //橡皮擦
 										{
@@ -516,11 +532,10 @@ int main(void)
 					 
 					 
 				flag.down=flag.move=flag.secondpoint=flag.up=0;	 
-		 }
 					 
   }
 
-
+ }
 }
 
 
@@ -562,7 +577,7 @@ void  PointHandler(void)
 	  else if(Motion.MotionMsg.Action == ACTION_DOWN)
 
 			{
-			   flag.up=0;
+			    flag.up=0;
 				flag.down=1;
 				flag.move=0;
 //    State.x = 0;
@@ -571,7 +586,7 @@ void  PointHandler(void)
 //    State.Pressed = 1;
 //    GUI_PID_StoreState(&State);
 //				GUI_SetColor(GUI_BLUE);
-//				GUI_SetPenSize(45);
+//				GUI_SetPenSize(50);
 //		  GUI_DrawPoint(lX,lY);
 			}
 		/* move */
