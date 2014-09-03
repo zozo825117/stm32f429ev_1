@@ -84,16 +84,18 @@ void HardFault_Handler(void)
   */
 unsigned char count=0;
 extern void BT_Hand(void);
+extern uint8_t time_set;
 void SysTick_Handler(void)
 {
   OS_TimeMS ++;
 	count++;
   //GUI_Exec();
  // BSP_Background();
-	if(count==10)
+	if(count==time_set)
 	{
-	count=0;
+
   GUI_TOUCH_Exec();
+			count=0;
 		//BT_Hand();
 		
 	}

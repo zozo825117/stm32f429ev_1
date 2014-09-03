@@ -42,6 +42,8 @@ extern void delay1_Touch(unsigned int n);
 #define abs(a,b)  ((a>b)?(a-b):(b-a))
 unsigned char stepkey=1;
 
+extern void MainTask_NotePad(void);
+
 //LED强度测试
 volatile uint8_t count_ledpad=0,led_testflag=0; 
 unsigned char string_LEDLevel[]={'L','E','D',' ',' ','L','e','v','0',':',' ',' ',' ','\0'};
@@ -65,7 +67,7 @@ typedef struct {
 	GUI_COLOR   color;
 	GUI_COLOR colorsecond;
 	uint8_t erase;
-
+ uint8_t keyboard_flag;
 } FLAG;
 
 
@@ -75,7 +77,7 @@ FLAG flag;
 volatile short g_sTouchX1;
 volatile short g_sTouchY1;
 uint8_t GUI_Initialized   = 0;
-uint32_t Tmr1Cnt=0,DelayForLevelTest;
+uint32_t Tmr1Cnt=0,DelayForLevelTest=0;
 #define  ID_BUTTON  (GUI_ID_USER+0)
 uint8_t res=0;  //初始化返回值变量
 uint8_t buf[30];
@@ -215,7 +217,7 @@ void calkey(void)
   if(!GetKeyVal())
   {
    stepkey++;
-		if(stepkey==3)
+		if(stepkey==4)
 		{
 		stepkey=1;
 		}
@@ -227,6 +229,8 @@ uint8_t NumPDs;
 unsigned int last_x1,last_y1,last_x2,last_y2;
 unsigned char num_touch=0;
 uint8_t PoinCal(uint16_t x,uint16_t y,uint16_t x1,uint16_t x2,uint16_t y1,uint16_t y2);
+uint8_t time_set=10;
+
 int main(void)
 {
 	int i;
@@ -244,6 +248,7 @@ int main(void)
 	for(i=0;i<0xffffff;i++);
 	res=NeonodeSetting();	
 	MotionEventInit();
+
   GUI_Init();	
 /*OpenShort Test  PD & Led */
   NeonodeOpenShortTest(OSTestPDs,OSTestLESs,&NumLeds,&NumPDs);
@@ -254,8 +259,8 @@ int main(void)
 		 GUI_Initialized = 1;
 	   WM_SetCallback(WM_HBKWIN,__cbDeskCallback);
 		 GUI_SetColor(GUI_BLACK);//设置默认颜色
-		flag.color=GUI_BLACK;
-		flag.colorsecond=GUI_BLACK;
+		 flag.color=GUI_BLACK;
+		 flag.colorsecond=GUI_BLACK;
      GUI_SetPenSize(10);
 	}
  else
@@ -268,7 +273,7 @@ int main(void)
 	while(1)
 	{
 		
-		
+	//	stepkey=1;
 		calkey();
 		if(stepkey==2)
 		{
@@ -278,9 +283,10 @@ int main(void)
 			GUI_Clear();
 			GUI_SetFont(GUI_FONT_8X16_ASCII);
 			}
-			while(Tmr1Cnt - DelayForLevelTest < 60); // delay 600ms
+				
+		//	while(Tmr1Cnt - DelayForLevelTest < 60); // delay 600ms
 	    NeonodeLEDLevelsTest(LedLevelTest,&NumLeds);
-			DelayForLevelTest = Tmr1Cnt;
+		//  DelayForLevelTest = Tmr1Cnt;
 				for(i=0;i<0xfffff;i++);
 					for(count_ledpad=0;count_ledpad<26;count_ledpad++)           //26个LED  
 						{
@@ -369,6 +375,7 @@ int main(void)
 			
 			hasstep2=1;
 		}
+		
 		if(stepkey==1)
 		{
 			if(hasstep2)
@@ -391,6 +398,7 @@ int main(void)
 						{
 							     last_x1=g_sTouchX1;
 						       last_y1=g_sTouchY1;
+							 GUI_DrawPoint(last_x1,last_y1);
 							if(g_sTouchY1>_aButtonData[0].yPos-20)
 							{
 								if(g_sTouchX1<_aButtonData[6].xPos+_aButtonData[6].xSize) //左边
@@ -440,6 +448,7 @@ int main(void)
 									      GUI_DrawBitmap(&bmclear,46*9,435);
 									    // GUI_DrawCircle(200,100,20);
 									     flag.erase=1;
+								//	GUI_CURSOR_Show();
 								}
 								if(PoinCal(g_sTouchX1,g_sTouchY1,46*9,46*9+45,435,435+43)) //清屏
 								{
@@ -487,8 +496,8 @@ int main(void)
 										{
 //											GUI_SetColor(GUI_GREEN);
 //											GUI_DrawRect(g_sTouchX1-1,g_sTouchY1-1,TouchNotesBuf[0].Width+g_sTouchX1+2,g_sTouchY1+TouchNotesBuf[0].Height+2);
-													GUI_CURSOR_Show();
-											GUI_CURSOR_Select(&GUI_CursorCrossL);
+										  //GUI_CURSOR_Show();
+										//	GUI_CURSOR_Select(&GUI_CursorCrossL);
 										  GUI_SetColor(GUI_WHITE);
 												//GUI_FillRect(last_x1-1,last_y1-1,TouchNotesBuf[0].Width+last_x1+2,last_y1+TouchNotesBuf[0].Height+2);
 											
@@ -534,6 +543,14 @@ int main(void)
 				flag.down=flag.move=flag.secondpoint=flag.up=0;	 
 					 
   }
+		
+	
+		if(stepkey==3)   //键盘
+		{
+			time_set=15;
+			flag.keyboard_flag=1;
+		MainTask_NotePad();
+		}
 
  }
 }
@@ -627,8 +644,9 @@ void BT_Hand(void)
 {
 	static uint8_t noKeyDly = 0;
 	int i;
-	Tmr1Cnt++;
-	
+	//Tmr1Cnt++;
+	if(!flag.keyboard_flag)
+	{
 	if( NeonodeNewConvertion() )
 		{
 		  if((Motion.MotionMsg.Action == ACTION_DOWN)||(Motion.MotionMsg.Action == ACTION_UP)||
@@ -636,10 +654,44 @@ void BT_Hand(void)
 		  	{
 		  	 	g_sTouchX1 = getAxisValue(AXIS_X);
 					g_sTouchY1 = getAxisValue(AXIS_Y);
+						PointHandler();
 		  	}
-			PointHandler();
+//					else
+//		{
+//	  	g_sTouchX1=0xffff;
+//			g_sTouchY1=0xffff;
+//		}
+//		
 			noKeyDly = 0;
 		}
+	}
+	
+	else //进入键盘界面
+	{
+			if(!flag.secondpoint)
+			{
+				if( NeonodeNewConvertion())
+				{
+			
+				if((Motion.MotionMsg.Action == ACTION_DOWN)||
+								(Motion.MotionMsg.Action == ACTION_MOVE) )
+						{
+							g_sTouchX1 = getAxisValue(AXIS_X);
+							g_sTouchY1 = getAxisValue(AXIS_Y);
+								PointHandler();
+						}
+				else if((Motion.MotionMsg.Action == ACTION_UP))
+						{
+							g_sTouchX1=0xffff;
+							g_sTouchY1=0xffff;
+						}
+
+				}
+
+			}
+	}
+	
+
 		#if 0
 		else
 		{
